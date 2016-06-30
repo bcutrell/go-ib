@@ -1,28 +1,32 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 )
 
-func Urlencode(baseUrl string) {
-	params := url.Values{}
-	params.Add("query", "keyword")
-
-	finalUrl := fmt.Sprintf("%s?%s", baseUrl, params.Encode())
-	fmt.Println(finalUrl)
+type Config struct {
+	Query   string
+	Token   string
+	BaseUrl string
 }
 
-func flex() {
-	// Params
-	// query_id, token, verbose, url
-	url := "https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.SendRequest"
+func Urlencode(baseUrl string) string {
+	params := url.Values{}
+	params.Add("t", Token)
+	params.Add("q", QueryId)
+	params.Add("v", "3")
 
-	// Http request
-	resp, err := http.Get(url)
+	finalUrl := fmt.Sprintf("%s?%s", baseUrl, params.Encode())
+	return finalUrl
+}
 
+func flex(fullUrl string) string {
+	resp, err := http.Get(fullUrl)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -31,17 +35,28 @@ func flex() {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
-
-	// Return
-	// csv file
-
+	return string(body)
 }
 
 func main() {
 	fmt.Println("IB Flex Reader")
-	// flex()
-	Urlencode("http://theringer.com")
-}
 
-// https://blog.gopheracademy.com/advent-2014/reading-config-files-the-go-way/
+	// Get Params
+	file, _ := os.Open("config.json")
+	decoder := json.NewDecoder(file)
+	config := Config{}
+	err := decoder.Decode(&config)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	baseUrl := config.BaseUrl
+
+	// Add params to URL
+	fullUrl := Urlencode(baseUrl)
+	fmt.Println(fullUrl)
+
+	// Get initial IB response
+	resp := flex(fullUrl)
+
+	// Write CSV
+}
