@@ -64,11 +64,15 @@ func main() {
 	// Get initial IB response
 	resp := flex(fullUrl)
 
-	// Parse
+	// Parse and update config values
 	var x XmlResponse
 	xml.Unmarshal(resp, &x)
-	fmt.Println(x.ReferenceCode)
-	fmt.Println(x.Url)
+	config.Query = x.ReferenceCode
+	config.BaseUrl = x.Url
+
+	// Get IB report
+	resp = flex(fullUrl)
+	fmt.Println(string(resp))
 
 	// Write CSV
 }
