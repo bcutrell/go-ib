@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,17 +16,23 @@ type Config struct {
 	BaseUrl string
 }
 
-func Urlencode(baseUrl string) string {
+type XmlResponse struct {
+	Url           string
+	ReferenceCode string
+	Status        string
+}
+
+func Urlencode(c Config) string {
 	params := url.Values{}
-	params.Add("t", Token)
-	params.Add("q", QueryId)
+	params.Add("t", c.Token)
+	params.Add("q", c.Query)
 	params.Add("v", "3")
 
-	finalUrl := fmt.Sprintf("%s?%s", baseUrl, params.Encode())
+	finalUrl := fmt.Sprintf("%s?%s", c.BaseUrl, params.Encode())
 	return finalUrl
 }
 
-func flex(fullUrl string) string {
+func flex(fullUrl string) []byte {
 	resp, err := http.Get(fullUrl)
 	if err != nil {
 		fmt.Println(err)
@@ -35,7 +42,7 @@ func flex(fullUrl string) string {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	return string(body)
+	return body
 }
 
 func main() {
@@ -49,14 +56,19 @@ func main() {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	baseUrl := config.BaseUrl
 
 	// Add params to URL
-	fullUrl := Urlencode(baseUrl)
+	fullUrl := Urlencode(config)
 	fmt.Println(fullUrl)
 
 	// Get initial IB response
 	resp := flex(fullUrl)
+
+	// Parse
+	var x XmlResponse
+	xml.Unmarshal(resp, &x)
+	fmt.Println(x.ReferenceCode)
+	fmt.Println(x.Url)
 
 	// Write CSV
 }
