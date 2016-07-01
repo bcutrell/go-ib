@@ -3,11 +3,14 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"gopkg.in/matryer/try.v1"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -20,6 +23,12 @@ type XmlResponse struct {
 	Url           string
 	ReferenceCode string
 	Status        string
+}
+
+type ReportXmlResponse struct {
+	ErrorCode    string
+	Status       string
+	ErrorMessage string
 }
 
 func Urlencode(c Config) string {
@@ -67,12 +76,40 @@ func main() {
 	// Parse and update config values
 	var x XmlResponse
 	xml.Unmarshal(resp, &x)
+
+	// Update URL
 	config.Query = x.ReferenceCode
 	config.BaseUrl = x.Url
+	fullUrl = Urlencode(config)
 
-	// Get IB report
-	resp = flex(fullUrl)
-	fmt.Println(string(resp))
+	var fullResp []byte
+	reportGenerr := try.Do(func(attempt int) (bool, error) {
+		var reportGenerr error
+
+		// Get IB report
+		fullResp = flex(fullUrl)
+		fmt.Println(string(fullResp))
+
+		var x2 ReportXmlResponse
+		xml.Unmarshal(fullResp, &x2)
+
+		// reportGenerr != nil
+		fmt.Println(x2)
+		if x2.ErrorCode == "1019" {
+			reportGenerr = errors.New("can't work with 42")
+			time.Sleep(1 * time.Minute) // wait a minute
+		} else {
+			reportGenerr = nil
+		}
+
+		return attempt < 5, reportGenerr // try 5 times
+	})
+
+	if reportGenerr != nil {
+		fmt.Println("error:", err)
+	}
 
 	// Write CSV
+	fmt.Println(string(fullResp))
+
 }
