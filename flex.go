@@ -108,8 +108,14 @@ func main() {
 	if reportGenerr != nil {
 		fmt.Println("error:", err)
 	}
+	
+	// Write file
+	file_err := ioutil.WriteFile("result.csv", fullResp, 0644)
+	checkError("File Write Error", file_err)
+}
 
-	// Write CSV
-	fmt.Println(string(fullResp))
-
+func checkError(message string, err error) {
+    if err != nil {
+        fmt.Println(message, err)
+    }
 }
