@@ -1,5 +1,7 @@
 package main
 
+// "http://godoc.org/github.com/pkg/sftp"
+
 import (
 	"encoding/json"
 	"encoding/xml"
@@ -62,9 +64,7 @@ func main() {
 	decoder := json.NewDecoder(file)
 	config := Config{}
 	err := decoder.Decode(&config)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+	checkError("Decode error:", err)
 
 	// Add params to URL
 	fullUrl := Urlencode(config)
@@ -74,14 +74,15 @@ func main() {
 	resp := flex(fullUrl)
 
 	// Parse and update config values
-	var x XmlResponse
-	xml.Unmarshal(resp, &x)
+	var responseXml XmlResponse
+	xml.Unmarshal(resp, &responseXml)
 
 	// Update URL
-	config.Query = x.ReferenceCode
-	config.BaseUrl = x.Url
+	config.Query = responseXml.ReferenceCode
+	config.BaseUrl = responseXml.Url
 	fullUrl = Urlencode(config)
 
+	// Get IB reports
 	var fullResp []byte
 	reportGenerr := try.Do(func(attempt int) (bool, error) {
 		var reportGenerr error
@@ -90,13 +91,13 @@ func main() {
 		fullResp = flex(fullUrl)
 		fmt.Println(string(fullResp))
 
-		var x2 ReportXmlResponse
-		xml.Unmarshal(fullResp, &x2)
+		var flexReport ReportXmlResponse
+		xml.Unmarshal(fullResp, &flexReport)
 
 		// reportGenerr != nil
-		fmt.Println(x2)
+		fmt.Println(flexReport)
 		if x2.ErrorCode == "1019" {
-			reportGenerr = errors.New("can't work with 42")
+			reportGenerr = errors.New("Report still generating...")
 			time.Sleep(1 * time.Minute) // wait a minute
 		} else {
 			reportGenerr = nil
@@ -108,14 +109,14 @@ func main() {
 	if reportGenerr != nil {
 		fmt.Println("error:", err)
 	}
-	
+
 	// Write file
 	file_err := ioutil.WriteFile("result.csv", fullResp, 0644)
 	checkError("File Write Error", file_err)
 }
 
 func checkError(message string, err error) {
-    if err != nil {
-        fmt.Println(message, err)
-    }
+	if err != nil {
+		fmt.Println(message, err)
+	}
 }
