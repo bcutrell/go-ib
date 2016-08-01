@@ -1,4 +1,4 @@
-package main
+package go_ib
 
 // "http://godoc.org/github.com/pkg/sftp"
 
@@ -96,7 +96,7 @@ func main() {
 
 		// reportGenerr != nil
 		fmt.Println(flexReport)
-		if x2.ErrorCode == "1019" {
+		if flexReport.ErrorCode == "1019" {
 			reportGenerr = errors.New("Report still generating...")
 			time.Sleep(1 * time.Minute) // wait a minute
 		} else {
