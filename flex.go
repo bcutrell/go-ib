@@ -1,6 +1,7 @@
-package go_ib
+package main
 
 // "http://godoc.org/github.com/pkg/sftp"
+// XXXXXXXX.SLPositionsAndTrades.20160801.20160701.csv
 
 import (
 	"encoding/json"
@@ -94,7 +95,6 @@ func main() {
 		var flexReport ReportXmlResponse
 		xml.Unmarshal(fullResp, &flexReport)
 
-		// reportGenerr != nil
 		fmt.Println(flexReport)
 		if flexReport.ErrorCode == "1019" {
 			reportGenerr = errors.New("Report still generating...")
